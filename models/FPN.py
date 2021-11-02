@@ -2,7 +2,7 @@
 from __future__ import print_function
 import torch
 import torch.nn as nn
-from models.resnet import ResNet, Bottleneck
+from resnet import ResNet, Bottleneck
 import torchvision.transforms as transforms
 class FPN(nn.Module):
     def __init__(self, final_dim=128):

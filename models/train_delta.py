@@ -2,7 +2,7 @@
 from __future__ import print_function
 import torch
 import torch.optim as optim
-from models.polygon_model import PolygonModel
+from polygon_model import PolygonModel
 from utils import *
 from dataloader import loadData
 from losses import delta_loss
@@ -13,14 +13,22 @@ from collections import defaultdict
 warnings.filterwarnings('ignore')
 
 
-def train(config, load_resnet50=False, pre_trained=None, cur_epochs=0):
+'''
+CUDA_VISIBLE_DEVICES=5 python train_delta.py
+CUDA_VISIBLE_DEVICES=5,6 python -m torch.distributed.launch --nproc_per_node=2 --master_port 29501 train_delta.py
 
+'''
+
+def train(config, load_resnet50=False, pre_trained=None, cur_epochs=0):
     batch_size = config['batch_size']
     lr = config['lr']
     epochs = config['epoch']
 
-    train_dataloader = loadData('train', 16, 71, batch_size)
-    val_loader = loadData('val', 16, 71, batch_size, shuffle=False)
+    # train_dataloader = loadData('train', 16, 71, batch_size)
+    # val_loader = loadData('val', 16, 71, batch_size, shuffle=False)
+    
+    train_dataloader = loadData(config['train']['img_path'], config['train']['anno_file'], 16, 71, 'train', batch_size)
+    val_loader       = loadData(config['val']['img_path'],   config['val']['anno_file'],   16, 71, 'val',   batch_size)
     model = PolygonModel(load_predtrained_resnet50=load_resnet50,
                          predict_delta=True).cuda()
     # checkpoint
@@ -28,7 +36,7 @@ def train(config, load_resnet50=False, pre_trained=None, cur_epochs=0):
         model.load_state_dict(torch.load(pre_trained))
         print('loaded pretrained polygon net!')
 
-
+    
     no_wd = []
     wd = []
     for name, param in model.named_parameters():
@@ -52,7 +60,7 @@ def train(config, load_resnet50=False, pre_trained=None, cur_epochs=0):
     scheduler = optim.lr_scheduler.StepLR(optimizer,
                                           step_size=config['lr_decay'][0],
                                           gamma=config['lr_decay'][1])
-
+    
     print('Total Epochs:', epochs)
     for it in range(cur_epochs, epochs):
         accum = defaultdict(float)
@@ -134,6 +142,7 @@ def train(config, load_resnet50=False, pre_trained=None, cur_epochs=0):
             # 每3000step一次
             if (index+1) % config['val_every'] == 0:
                 # validation
+                import pdb;pdb.set_trace()
                 model.encoder.eval()
                 val_IoU = []
                 less_than2 = 0
@@ -162,8 +171,6 @@ def train(config, load_resnet50=False, pre_trained=None, cur_epochs=0):
                             leftW = left_WH[0][ii]
                             leftH = left_WH[1][ii]
 
-
-
                             all_len = np.sum(val_mask_final[ii].numpy())
                             cnt_target = val_target[ii][:all_len]
                             for vert in cnt_target:
@@ -171,7 +178,6 @@ def train(config, load_resnet50=False, pre_trained=None, cur_epochs=0):
                                                   vert[1]/scaleH + leftH))
 
                             # print('target:', cnt_target)
-
                             pred_len_b = pred_len[ii] - 1
                             if pred_len_b < 2:
                                 val_IoU.append(0.)
@@ -196,7 +202,7 @@ def train(config, load_resnet50=False, pre_trained=None, cur_epochs=0):
                 if it > 5:  # it = 6
                     print('Saving training parameters after this epoch:')
                     torch.save(model.state_dict(),
-                               '/data/duye/pretrained_models/FPN_Epoch{}-Step{}_ValIoU{}.pth'.format(
+                               '/workdir/FPN_Epoch{}-Step{}_ValIoU{}.pth'.format(
                                    str(it + 1),
                                    str(index + 1),
                                    str(val_iou_data)))
@@ -211,7 +217,7 @@ def train(config, load_resnet50=False, pre_trained=None, cur_epochs=0):
 
 if __name__ == '__main__':
     config = {}
-    config['batch_size'] = 8
+    config['batch_size'] = 8 #8
     config['lr'] = 0.0001
     config['num'] = 16
     # epochs over the whole dataset
@@ -220,5 +226,11 @@ if __name__ == '__main__':
     config['weight_decay'] = 0.00001
     config['grad_clip'] = 40
     config['val_every'] = 3000
+
+    config['train'] = {'img_path':'/home/zhangmingming_2020/data/building/building_coco/train/images',
+                        'anno_file': '/home/zhangmingming_2020/data/building/building_coco/annotation/train.json'}
+    
+    config['val'] = {'img_path':'/home/zhangmingming_2020/data/building/building_coco/val/images',
+                        'anno_file': '/home/zhangmingming_2020/data/building/building_coco/annotation/val.json'}
 
     train(config, load_resnet50=True)

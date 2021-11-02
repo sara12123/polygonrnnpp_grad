@@ -16,6 +16,8 @@ def get_edge_mask(poly, mask):
     cv2.polylines(mask, [poly], True, [1])
 
     return mask
+
+
 def draw_poly(mask, poly):
     """
     NOTE: Numpy function
@@ -31,6 +33,7 @@ def draw_poly(mask, poly):
     cv2.fillPoly(mask, [poly], 255)
 
     return mask
+
 
 def iou(vertices1, vertices2, h ,w):
     '''
@@ -54,6 +57,7 @@ def iou(vertices1, vertices2, h ,w):
     else:
         return 0, nu, de
 
+
 def iou_from_mask(pred, gt):
     """
     Compute intersection over the union.
@@ -75,6 +79,7 @@ def iou_from_mask(pred, gt):
     iou = intersection / union if union > 0. else 0.
 
     return iou
+
 
 def iou_from_poly(pred, gt, width, height):
     """
@@ -116,6 +121,7 @@ def label2vertex(labels):
         vertices.append(vertex)
     return vertices
 
+
 def getbboxfromkps(kps,h,w):
     '''
 
@@ -134,6 +140,7 @@ def getbboxfromkps(kps,h,w):
     max_col = np.minimum(w, max_c[0] + w_extend)
     return (min_row,min_col,max_row,max_col)
 
+
 def img2tensor(img):
     '''
 
@@ -142,6 +149,7 @@ def img2tensor(img):
     '''
     img = np.rollaxis(img,2,0)
     return torch.from_numpy(img)
+
 
 def tensor2img(tensor):
     '''
@@ -152,6 +160,7 @@ def tensor2img(tensor):
     img = (tensor.numpy()*255).astype('uint8')
     img = np.rollaxis(img,0,3)
     return img
+
 
 # smooth RNN target
 def dt_targets_from_class(poly, grid_size, dt_threshold):
@@ -209,6 +218,7 @@ def reverse(arr, start, end):
         start += 1
         end -= 1
 
+
 # numpy算法，arr, 向右循环启动k位
 def rightShift(arr, k):
     if arr is None:
@@ -231,6 +241,7 @@ def poly01_to_poly0g(poly, grid_size):
     poly = cv2.approxPolyDP(poly, 0, False)[:, 0, :]   # dp 道格拉斯~算法，多边形点曲线拟合， 并减少点的数量
 
     return poly
+
 
 def poly0g_to_poly01(polygon, grid_side):
     """
@@ -279,6 +290,8 @@ def get_masked_poly(poly, grid_size):
         # This automatically removes the EOS
 
     return poly
+
+
 def class_to_xy(poly, grid_size):
     """
     NOTE: Numpy function
@@ -293,6 +306,7 @@ def class_to_xy(poly, grid_size):
 
     return out_poly
 
+
 def get_vertices_mask(poly, mask):
     """
     Generate a vertex mask
@@ -300,6 +314,7 @@ def get_vertices_mask(poly, mask):
     mask[poly[:, 1], poly[:, 0]] = 1.
 
     return mask
+
 
 def prepare_delta_target(rnn_pred, polygon_gt):
     """
@@ -349,6 +364,7 @@ def prepare_delta_target(rnn_pred, polygon_gt):
         delta_y[index2] = 0
         delta[b] = delta_x + 15 * delta_y
     return delta.long()
+
 
 """
 local_x = 7 + x

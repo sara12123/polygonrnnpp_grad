@@ -2,8 +2,8 @@
 from __future__ import print_function
 import torch
 import torch.nn as nn
-from models.FPN import FPN
-from models.convLSTM import AttConvLSTM
+from FPN import FPN
+from convLSTM import AttConvLSTM
 
 class PolygonModel(nn.Module):
     def __init__(self,
@@ -28,7 +28,7 @@ class PolygonModel(nn.Module):
             elif isinstance(m, nn.Linear):
                 nn.init.xavier_uniform_(m.weight)
                 nn.init.constant_(m.bias, 0)
-        res_path = '/data/duye/pretrained_models/resnet/resnet50-19c8e357.pth'
+        res_path = '/home/zhangmingming_2020/data/resnet/resnet50-19c8e357.pth'
         if load_predtrained_resnet50:
             self.encoder.resnet.load_state_dict(torch.load(res_path))
             print('Load pretrained resnet50 completed!')
